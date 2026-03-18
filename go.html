@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kamiurl — redirecting…</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e0e0e;
+    --text: #e8e8e8;
+    --accent: #c8f060;
+    --muted: #555;
+    --danger: #ff5555;
+    --mono: 'DM Mono', monospace;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&display=swap');
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono), monospace;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .logo {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .status {
+    font-size: 0.9rem;
+    color: var(--muted);
+    min-height: 1.4rem;
+  }
+
+  .destination {
+    font-size: 0.78rem;
+    color: var(--accent);
+    word-break: break-all;
+    max-width: 480px;
+    display: none;
+  }
+
+  .bar {
+    width: 200px;
+    height: 1px;
+    background: #222;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    position: absolute;
+    left: -100%;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    background: var(--accent);
+    animation: slide 1.2s ease-in-out forwards;
+  }
+
+  @keyframes slide {
+    0% { left: -100%; }
+    40% { left: -20%; }
+    100% { left: 0%; }
+  }
+
+  .error { color: var(--danger); font-size: 0.85rem; display: none; }
+  .back { 
+    font-size: 0.72rem; 
+    color: var(--muted); 
+    text-decoration: none; 
+    display: none;
+  }
+  .back:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="logo">kami<span>url</span></div>
+<div class="status" id="status">looking up link…</div>
+<div class="destination" id="dest"></div>
+<div class="bar"><div class="bar-fill" id="barFill"></div></div>
+<div class="error" id="error"></div>
+<a class="back" id="backLink" href="index.html">← back to kamiurl</a>
+
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getDatabase, ref, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBsWvHKxjTjuqaacmZFpYh0sikOjBsALns",
+    authDomain: "pantry-e2cb3.firebaseapp.com",
+    databaseURL: "https://pantry-e2cb3-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "pantry-e2cb3",
+    storageBucket: "pantry-e2cb3.appspot.com",
+    messagingSenderId: "1057996403862",
+    appId: "1:1057996403862:web:0f6e6a5d5dc8f4ba5a98e6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('c');
+
+  const statusEl = document.getElementById('status');
+  const destEl = document.getElementById('dest');
+  const errorEl = document.getElementById('error');
+  const backLink = document.getElementById('backLink');
+
+  if (!code) {
+    fail('no link code provided');
+  } else {
+    resolve(code);
+  }
+
+  async function resolve(code) {
+    try {
+      const snap = await get(ref(db, 'kamiurl/links/' + code));
+      if (!snap.exists()) {
+        fail(`no link found for code: ${code}`);
+        return;
+      }
+      const { url } = snap.val();
+      statusEl.textContent = 'redirecting…';
+      destEl.textContent = url;
+      destEl.style.display = 'block';
+      setTimeout(() => { window.location.href = url; }, 800);
+    } catch (e) {
+      fail('firebase error — ' + e.message);
+    }
+  }
+
+  function fail(msg) {
+    statusEl.textContent = '';
+    document.getElementById('barFill').style.animation = 'none';
+    document.getElementById('barFill').style.background = '#ff5555';
+    document.getElementById('barFill').style.left = '0';
+    errorEl.textContent = msg;
+    errorEl.style.display = 'block';
+    backLink.style.display = 'block';
+  }
+</script>
+</body>
+</html>
